@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import '../models/message_model.dart';
 import '../services/ai_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -24,15 +25,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize messages here
-    _messages.insert(
-      0,
-      ChatMessage(
-        user: _aiChatbot,
-        createdAt: DateTime.now(),
-        text: 'Hello! How can I help you today?',
-      ),
-    );
   }
 
   @override
@@ -43,10 +35,31 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    // Initialize messages here if they haven't been initialized yet
+    if (_messages.isEmpty) {
+      _messages.insert(
+        0,
+        ChatMessage(
+          user: _aiChatbot,
+          createdAt: DateTime.now(),
+          text: l10n.helloMessage,
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Chatbot'),
+        elevation: 0,
         backgroundColor: Theme.of(context).primaryColor,
+        title: Text(
+          l10n.aiChatbot,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
       ),
       body: DashChat(
         currentUser: _currentUser,
@@ -71,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
             );
           },
           inputDecoration: InputDecoration(
-            hintText: 'Type a message...',
+            hintText: l10n.typeMessageHint,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(25.0),
               borderSide: BorderSide.none,

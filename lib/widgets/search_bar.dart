@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/location_api_service.dart';
 import '../services/place_recommendation_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class PlaceSearchBar extends StatefulWidget {
   final Function(List<Map<String, dynamic>>) onSearchResults;
@@ -87,6 +88,8 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return SingleChildScrollView( // Allow scrolling if content overflows
       child: Padding(
         padding: const EdgeInsets.all(16.0), // Add some padding for better layout
@@ -96,8 +99,8 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
             // Wrap the dropdown in a Container to enforce proper constraints
             DropdownButtonFormField<Country>(
               isExpanded: true, // This is crucial - makes dropdown use available width
-              decoration: const InputDecoration(
-                labelText: 'Select Country',
+              decoration: InputDecoration(
+                labelText: l10n.selectCountry,
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               items: _countries
@@ -117,8 +120,8 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
                 ? const Center(child: CircularProgressIndicator())
                 : DropdownButtonFormField<Region>(
               isExpanded: true, // This is crucial - makes dropdown use available width
-              decoration: const InputDecoration(
-                labelText: 'Select Region',
+              decoration: InputDecoration(
+                labelText: l10n.selectRegion,
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
               items: _regions
@@ -151,8 +154,8 @@ class _PlaceSearchBarState extends State<PlaceSearchBar> {
                     strokeWidth: 2,
                   ),
                 )
-                    : const Text(
-                  'Search',
+                    : Text(
+                  l10n.search,
                   style: TextStyle(fontSize: 16),
                 ),
               ),

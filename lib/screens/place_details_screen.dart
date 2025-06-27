@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:travel_guide/screens/saved_place_details_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class PlaceDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> place;
@@ -46,6 +48,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   Future<void> _loadSavedPlaces() async {
+
     if (_currentUser == null)  {
       print('there is no current user');
       return;
@@ -70,9 +73,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   Future<void> _toggleSavePlace(Map<String, dynamic> place) async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to save places.')),
+        SnackBar(content: Text(l10n.loginToSavePlace)),
       );
       return;
     }
@@ -94,13 +99,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     } catch (e) {
       print('Error toggling save place: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update saved places.')),
+        SnackBar(content: Text(l10n.failUpdateSavedPlaces)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final places = widget.details['places'] as List<dynamic>? ?? [];
 
     return Scaffold(
@@ -111,7 +117,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                widget.place['name'] ?? 'Place Details',
+                widget.place['name'] ?? l10n.placeDetails,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -158,7 +164,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Recommended Attractions & Foods',
+                  l10n.recommendedAttractionAndFood,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).primaryColor,
@@ -209,6 +215,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
   }
 
   Widget _buildEmptyRecommendationsWidget(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -224,7 +232,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'No recommendations available for this location.',
+              l10n.noRecommendation,
               style: TextStyle(
                 color: Colors.grey[600],
                 fontStyle: FontStyle.italic,
@@ -236,6 +244,43 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
     );
   }
 
+  // Widget _buildRecommendationsList(List<dynamic> places, BuildContext context) {
+  //   return ListView.separated(
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     itemCount: places.length,
+  //     separatorBuilder: (_, __) => const SizedBox(height: 12),
+  //     itemBuilder: (context, index) {
+  //       final p = places[index];
+  //       final isSaved = _savedPlaceNames.contains(p['name']);
+  //       return Card(
+  //         elevation: 3,
+  //         shape: RoundedRectangleBorder(
+  //           borderRadius: BorderRadius.circular(12),
+  //         ),
+  //         child: ListTile(
+  //           title: Text(
+  //             p['name'] ?? '',
+  //             style: Theme.of(context).textTheme.titleMedium?.copyWith(
+  //               fontWeight: FontWeight.bold,
+  //               color: Theme.of(context).primaryColor,
+  //             ),
+  //           ),
+  //           subtitle: Text(p['address'] ?? ''),
+  //           trailing: IconButton(
+  //             icon: Icon(
+  //               isSaved ? Icons.bookmark : Icons.bookmark_border,
+  //               color: isSaved ? Colors.yellow[700] : null,
+  //             ),
+  //             onPressed: () => _toggleSavePlace(p),
+  //             tooltip: isSaved ? 'Remove from saved' : 'Save place',
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
   Widget _buildRecommendationsList(List<dynamic> places, BuildContext context) {
     return ListView.separated(
       shrinkWrap: true,
@@ -245,27 +290,38 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen> {
       itemBuilder: (context, index) {
         final p = places[index];
         final isSaved = _savedPlaceNames.contains(p['name']);
-        return Card(
-          elevation: 3,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            title: Text(
-              p['name'] ?? '',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
+        return GestureDetector(
+          onTap: () {
+            // Navigate to the details screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SavedPlaceDetailsScreen(place: p), // Replace with your destination screen
               ),
+            );
+          },
+          child: Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            subtitle: Text(p['address'] ?? ''),
-            trailing: IconButton(
-              icon: Icon(
-                isSaved ? Icons.bookmark : Icons.bookmark_border,
-                color: isSaved ? Colors.yellow[700] : null,
+            child: ListTile(
+              title: Text(
+                p['name'] ?? '',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).primaryColor,
+                ),
               ),
-              onPressed: () => _toggleSavePlace(p),
-              tooltip: isSaved ? 'Remove from saved' : 'Save place',
+              subtitle: Text(p['address'] ?? ''),
+              trailing: IconButton(
+                icon: Icon(
+                  isSaved ? Icons.bookmark : Icons.bookmark_border,
+                  color: isSaved ? Colors.yellow[700] : null,
+                ),
+                onPressed: () => _toggleSavePlace(p),
+                tooltip: isSaved ? 'Remove from saved' : 'Save place',
+              ),
             ),
           ),
         );

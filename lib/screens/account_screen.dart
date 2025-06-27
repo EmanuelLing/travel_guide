@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -6,6 +7,11 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/location_api_service.dart';
 import '../services/image_storage_service.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../locale_provider.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -21,6 +27,7 @@ class _AccountScreenState extends State<AccountScreen> {
   final _locationController = TextEditingController();
   final _authService = AuthService();
   final _locationApiService = LocationApiService();
+
   bool _isLoading = false;
   bool _isLoadingLocation = false;
   bool _initializing = true;
@@ -42,6 +49,7 @@ class _AccountScreenState extends State<AccountScreen> {
     super.initState();
     _initializeAuth();
     _initializeLocationData();
+    _loadLanguagePreference();
   }
 
   Future<void> _initializeLocationData() async {
@@ -53,7 +61,7 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       }
     } catch (e) {
-      // Handle error or show message
+      print('failed to get countries');
     }
   }
 
@@ -108,7 +116,6 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       }
     } catch (e) {
-      // Handle error or show message
       print(e.toString());
     }
   }
@@ -124,12 +131,21 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       }
     } catch (e) {
-      // Handle error or show message
       print("Error in load Cities ${e.toString()}");
     }
   }
 
+  Future<void> _loadLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? languageCode = prefs.getString('selected_language');
+    if (languageCode != null) {
+      Locale locale = Locale(languageCode);
+      Provider.of<LocaleProvider>(context, listen: false).setLocale(locale);
+    }
+  }
+
   void _updateLocationDisplay() {
+    print('selected Country = $_selectedCountry');
     final locationParts = [
       _selectedCity,
       _selectedRegion,
@@ -139,6 +155,8 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _showLocationPicker() async {
+    final l10n = AppLocalizations.of(context)!;
+
     final originalCountries = _countries;
     final originalRegions = _regions;
     final originalCities = _cities;
@@ -157,9 +175,6 @@ class _AccountScreenState extends State<AccountScreen> {
     }
     String? tempCity = _selectedCity;
 
-    // Remove duplicates from cities list
-    final uniqueCities = _cities.toSet().toList();
-
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -170,43 +185,60 @@ class _AccountScreenState extends State<AccountScreen> {
             final cities = (tempCountry != null && tempRegion != null) ? _cities : <String>[];
 
             return AlertDialog(
-              title: const Text('Select Location'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    DropdownButton<Country>(
-                      value: tempCountry,
-                      isExpanded: true,
-                      hint: const Text('Select Country'),
-                      items: countries.map<DropdownMenuItem<Country>>((Country country) {
-                        return DropdownMenuItem<Country>(
-                          value: country,
-                          child: Text(country.name),
-                        );
-                      }).toList(),
-                      onChanged: (Country? newValue) async {
-                        setState(() {
-                          tempCountry = newValue;
-                          tempRegion = null;
-                          tempCity = null;
-                          _regions = [];
-                          _cities = [];
-                        });
-                        if (newValue != null) {
-                          await _loadRegions(newValue.code);
-                          setState(() {});
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (tempCountry != null && _regions.isNotEmpty)
-                      Column(
-                        children: [
-                          DropdownButton<Region>(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.location_on, color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 8),
+                  Text(l10n.selectLocation),
+                ],
+              ),
+              content: Container(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDropdownField(
+                        label: l10n.selectCountry,
+                        icon: Icons.public,
+                        child: DropdownButton<Country>(
+                          value: tempCountry,
+                          isExpanded: true,
+                          hint: Text(l10n.selectCountry),
+                          items: countries.map<DropdownMenuItem<Country>>((Country country) {
+                            return DropdownMenuItem<Country>(
+                              value: country,
+                              child: Text(country.name),
+                            );
+                          }).toList(),
+                          onChanged: (Country? newValue) async {
+                            setState(() {
+                              tempCountry = newValue;
+                              tempRegion = null;
+                              tempCity = null;
+                              _regions = [];
+                              _cities = [];
+                            });
+                            if (newValue != null) {
+                              await _loadRegions(newValue.code);
+                              setState(() {});
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      if (tempCountry != null && _regions.isNotEmpty)
+                        _buildDropdownField(
+                          label: l10n.selectRegion,
+                          icon: Icons.map,
+                          child: DropdownButton<Region>(
                             value: tempRegion,
                             isExpanded: true,
-                            hint: const Text('Select Region'),
+                            hint: Text(l10n.selectRegion),
                             items: regions.map<DropdownMenuItem<Region>>((Region region) {
                               return DropdownMenuItem<Region>(
                                 value: region,
@@ -221,32 +253,36 @@ class _AccountScreenState extends State<AccountScreen> {
                               });
                               if (newValue != null && tempCountry != null) {
                                 await _loadCities(tempCountry!.code, newValue.isoCode);
-                                print("cities after update: ${cities}");
                                 setState(() {});
                               }
                             },
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    if (tempCountry != null && tempRegion != null)
-                        DropdownButton<String>(
-                          value: tempCity,
-                          isExpanded: true,
-                          hint: const Text('Select City'),
-                          items: cities.map<DropdownMenuItem<String>>((String city) {
-                            return DropdownMenuItem<String>(
-                              value: city,
-                              child: Text(city),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              tempCity = newValue;
-                            });
-                          },
-                        )
-                  ],
+                        ),
+                      if (tempCountry != null && _regions.isNotEmpty)
+                        const SizedBox(height: 20),
+                      if (tempCountry != null && tempRegion != null)
+                        _buildDropdownField(
+                          label: l10n.selectCity,
+                          icon: Icons.location_city,
+                          child: DropdownButton<String>(
+                            value: tempCity,
+                            isExpanded: true,
+                            hint: Text(l10n.selectCity),
+                            items: cities.map<DropdownMenuItem<String>>((String city) {
+                              return DropdownMenuItem<String>(
+                                value: city,
+                                child: Text(city),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                tempCity = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
               actions: [
@@ -259,7 +295,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -272,7 +308,12 @@ class _AccountScreenState extends State<AccountScreen> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text('Save'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(l10n.save),
                 ),
               ],
             );
@@ -282,13 +323,47 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  Widget _buildDropdownField({
+    required String label,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: Colors.grey[600]),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      ],
+    );
+  }
+
   Future<void> _getCurrentLocation() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() => _isLoadingLocation = true);
     try {
-      // Get current position using geolocator package
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
-      // Reverse geocode to get address details using geocoding package
       List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
 
       if (placemarks.isNotEmpty) {
@@ -310,14 +385,14 @@ class _AccountScreenState extends State<AccountScreen> {
         });
       } else {
         setState(() {
-          _locationController.text = 'Location not found';
+          _locationController.text = l10n.locationNotFound;
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error getting location: $e'),
+            content: Text('${l10n.errorGettingLocation}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -328,6 +403,8 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _handleSave(UserModel user) async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -342,9 +419,19 @@ class _AccountScreenState extends State<AccountScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(l10n.profileUpdate),
+              ],
+            ),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -352,8 +439,18 @@ class _AccountScreenState extends State<AccountScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating profile: ${e.toString()}'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('${l10n.errorUpdateProfile}: ${e.toString()}')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -382,6 +479,11 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  Future<void> _saveLanguagePreference(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_language', languageCode);
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -392,27 +494,58 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_initializing) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Theme.of(context).primaryColor.withOpacity(0.1),
+                Colors.white,
+              ],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-      ),
+      backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Theme.of(context).primaryColor,
+          title: Text(
+          l10n.savedPlaces,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        ),
       body: StreamBuilder<UserModel?>(
         stream: _authStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(context).primaryColor.withOpacity(0.1),
+                    Colors.white,
+                  ],
+                ),
+              ),
+              child: const Center(child: CircularProgressIndicator()),
+            );
           }
 
           final user = snapshot.data;
@@ -433,40 +566,308 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildSignInPrompt() {
-    return Center(
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Theme.of(context).primaryColor.withOpacity(0.1),
+            Colors.white,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Card(
+          margin: const EdgeInsets.all(24),
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.account_circle_outlined,
+                    size: 64,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.signInProfile,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Access your account settings and preferences',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/login');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      l10n.signIn,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserProfile(UserModel user) {
+    return CustomScrollView(
+      slivers: [
+        // _buildAppBar(user),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildProfileCard(user),
+                  const SizedBox(height: 20),
+                  _buildPersonalInfoCard(user),
+                  const SizedBox(height: 20),
+                  _buildSettingsCard(),
+                  const SizedBox(height: 20),
+                  _buildActionButtons(user),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget _buildAppBar(UserModel user) {
+  //   final l10n = AppLocalizations.of(context)!;
+  //
+  //   return SliverAppBar(
+  //     expandedHeight: 120,
+  //     floating: false,
+  //     pinned: true,
+  //     elevation: 0,
+  //     backgroundColor: Theme.of(context).primaryColor,
+  //     flexibleSpace: FlexibleSpaceBar(
+  //       title: Text(
+  //         l10n.settingsTitle,
+  //         style: const TextStyle(
+  //           fontWeight: FontWeight.bold,
+  //           color: Colors.white,
+  //         ),
+  //       ),
+  //       background: Container(
+  //         decoration: BoxDecoration(
+  //           gradient: LinearGradient(
+  //             begin: Alignment.topLeft,
+  //             end: Alignment.bottomRight,
+  //             colors: [
+  //               Theme.of(context).primaryColor,
+  //               Theme.of(context).primaryColor.withOpacity(0.8),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildProfileCard(UserModel user) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            _buildProfilePicture(user),
+            const SizedBox(height: 16),
+            Text(
+              user.displayName ?? 'No name set',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildEmailDisplay(user),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalInfoCard(UserModel user) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.person_outline,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Personal Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildNameField(),
+            const SizedBox(height: 16),
+            _buildLocationField(),
+            if (_hasSelectedLocation) ...[
+              const SizedBox(height: 12),
+              _buildSelectedLocation(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard() {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.settings_outlined,
+                  color: Theme.of(context).primaryColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Preferences',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildLanguageSelector(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSelector() {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.account_circle_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Sign in to view your profile',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 16,
+          Row(
+            children: [
+              Icon(Icons.language, color: Colors.grey[600]),
+              const SizedBox(width: 12),
+              Text(
+                l10n.languageSetting,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: const Text(
-              'Sign In',
-              style: TextStyle(fontSize: 16),
+            child: DropdownButton<Locale>(
+              value: Provider.of<LocaleProvider>(context).locale ?? Localizations.localeOf(context),
+              icon: const Icon(Icons.arrow_drop_down),
+              underline: const SizedBox.shrink(),
+              onChanged: (Locale? newLocale) {
+                if (newLocale != null) {
+                  _saveLanguagePreference(newLocale.languageCode);
+                  Provider.of<LocaleProvider>(context, listen: false).setLocale(newLocale);
+                }
+              },
+              items: AppLocalizations.supportedLocales.map((Locale locale) {
+                return DropdownMenuItem<Locale>(
+                  value: locale,
+                  child: Text(Provider.of<LocaleProvider>(context).getLanguageName(locale)),
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -474,69 +875,195 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildUserProfile(UserModel user) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildProfilePicture(user),
-            const SizedBox(height: 24),
-            _buildEmailDisplay(user),
-            const SizedBox(height: 24),
-            _buildNameField(),
-            const SizedBox(height: 16),
-            _buildLocationField(),
-            const SizedBox(height: 16),
-            if (_hasSelectedLocation) _buildSelectedLocation(),
-            const SizedBox(height: 24),
-            _buildSaveButton(user),
-            const SizedBox(height: 16),
-            _buildSignOutButton(),
-          ],
+  // Widget _buildLanguageSelector() {
+  //   final l10n = AppLocalizations.of(context)!;
+  //
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey[50],
+  //       borderRadius: BorderRadius.circular(12),
+  //       border: Border.all(color: Colors.grey[200]!),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             Icon(Icons.language, color: Colors.grey[600]),
+  //             const SizedBox(width: 12),
+  //             Text(
+  //               l10n.languageSetting,
+  //               style: const TextStyle(
+  //                 fontSize: 16,
+  //                 fontWeight: FontWeight.w500,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         Container(
+  //           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+  //           decoration: BoxDecoration(
+  //             border: Border.all(color: Colors.grey[300]!),
+  //             borderRadius: BorderRadius.circular(8),
+  //           ),
+  //           child: DropdownButton<Locale>(
+  //             value: Provider.of<LocaleProvider>(context).locale ?? Localizations.localeOf(context),
+  //             icon: const Icon(Icons.arrow_drop_down),
+  //             underline: const SizedBox.shrink(),
+  //             onChanged: (Locale? newLocale) {
+  //               if (newLocale != null) {
+  //                 _saveLanguagePreference(newLocale.languageCode);
+  //                 Provider.of<LocaleProvider>(context, listen: false).setLocale(newLocale);
+  //               }
+  //             },
+  //             items: AppLocalizations.supportedLocales.map((Locale locale) {
+  //               return DropdownMenuItem<Locale>(
+  //                 value: locale,
+  //                 child: Text(
+  //                   Provider.of<LocaleProvider>(context).getLanguageName(locale),
+  //                 ),
+  //               );
+  //             }).toList(),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  Widget _buildActionButtons(UserModel user) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isLoading ? null : () => _handleSave(user),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+            child: _isLoading
+                ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            )
+                : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.save),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.saveChanges,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: _handleSignOut,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: BorderSide(color: Colors.red[300]!),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout, color: Colors.red[600]),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.signOut,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildProfilePicture(UserModel user) {
-
     return Center(
       child: Stack(
         children: [
-          FutureBuilder<File?>(
-            future: ImageStorageService.getImageFromPath(user.localPhotoPath),
-            builder: (context, snapshot) {
-              return GestureDetector(
-                onTap: _handleProfilePictureTap,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: snapshot.data != null
-                      ? FileImage(snapshot.data!)
-                      : null,
-                  child: snapshot.data == null
-                      ? const Icon(Icons.person, size: 50, color: Colors.grey)
-                      : null,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              );
-            },
+              ],
+            ),
+            child: FutureBuilder<File?>(
+              future: ImageStorageService.getImageFromPath(user.localPhotoPath),
+              builder: (context, snapshot) {
+                return GestureDetector(
+                  onTap: _handleProfilePictureTap,
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.grey[300],
+                    backgroundImage: snapshot.data != null
+                        ? FileImage(snapshot.data!)
+                        : null,
+                    child: snapshot.data == null
+                        ? Icon(
+                      Icons.person,
+                      size: 60,
+                      color: Colors.grey[600],
+                    )
+                        : null,
+                  ),
+                );
+              },
+            ),
           ),
           Positioned(
-            right: 0,
-            bottom: 0,
+            right: 4,
+            bottom: 4,
             child: GestureDetector(
               onTap: _handleProfilePictureTap,
               child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Icon(
-                  Icons.edit,
+                  Icons.camera_alt,
                   size: 20,
                   color: Colors.white,
                 ),
@@ -549,23 +1076,59 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _handleProfilePictureTap() async {
+    final l10n = AppLocalizations.of(context)!;
+
     final action = await showDialog<String>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Update Profile Picture'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.photo_camera, color: Theme.of(context).primaryColor),
+              const SizedBox(width: 8),
+              Text(l10n.updateProfilePicture),
+            ],
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
-                onTap: () => Navigator.pop(context, 'gallery'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Take a Photo'),
-                onTap: () => Navigator.pop(context, 'camera'),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.photo_library, color: Colors.blue[600]),
+                      ),
+                      title: Text(l10n.chooseFromGallery),
+                      onTap: () => Navigator.pop(context, 'gallery'),
+                    ),
+                    Divider(height: 1, color: Colors.grey[200]),
+                    ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.camera_alt, color: Colors.green[600]),
+                      ),
+                      title: Text(l10n.takeAPhoto),
+                      onTap: () => Navigator.pop(context, 'camera'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -599,7 +1162,6 @@ class _AccountScreenState extends State<AccountScreen> {
         );
 
         if (localPath != null) {
-
           await _authService.updateProfile(
             uid: user.uid,
             localPhotoPath: localPath,
@@ -607,14 +1169,40 @@ class _AccountScreenState extends State<AccountScreen> {
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile picture updated')),
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(l10n.profileUpdate),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             );
           }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error updating profile picture: $e')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('${l10n.errorUpdateProfile}: $e')),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           );
         }
       } finally {
@@ -626,26 +1214,50 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildEmailDisplay(UserModel user) {
-    return Text(
-      user.email ?? 'No email set',
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: Colors.grey[600],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(20),
       ),
-      textAlign: TextAlign.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.email_outlined, size: 16, color: Colors.grey[600]),
+          const SizedBox(width: 8),
+          Text(
+            user.email ?? 'No email set',
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildNameField() {
+    final l10n = AppLocalizations.of(context)!;
+
     return TextFormField(
       controller: _nameController,
-      decoration: const InputDecoration(
-        labelText: 'Display Name',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.person_outline),
+      decoration: InputDecoration(
+        labelText: l10n.displayName,
+        prefixIcon: const Icon(Icons.person_outline),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey[50],
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please enter your name';
+          return l10n.enterName;
         }
         return null;
       },
@@ -653,37 +1265,50 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildLocationField() {
+    final l10n = AppLocalizations.of(context)!;
     final isLocationComplete = _selectedCountry != null && _selectedRegion != null && _selectedCity != null;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: TextFormField(
-            controller: _locationController,
-            readOnly: true,
-            decoration: InputDecoration(
-              labelText: 'Location',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.location_on_outlined),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: isLocationComplete ? _showLocationPicker: null,
-              ),
+        TextFormField(
+          controller: _locationController,
+          readOnly: true,
+          decoration: InputDecoration(
+            labelText: l10n.location,
+            prefixIcon: const Icon(Icons.location_on_outlined),
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isLoadingLocation)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  // IconButton(
+                  //   icon: const Icon(Icons.my_location),
+                  //   onPressed: _getCurrentLocation,
+                  //   tooltip: 'Get current location',
+                  // ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: _showLocationPicker,
+                ),
+              ],
             ),
-            onTap: isLocationComplete ? _showLocationPicker: null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
-        ),
-        const SizedBox(width: 8),
-        IconButton(
-          onPressed: _isLoadingLocation ? null : _getCurrentLocation,
-          icon: _isLoadingLocation
-              ? const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-              : const Icon(Icons.my_location),
-          tooltip: 'Use current location',
+          onTap: _showLocationPicker,
         ),
       ],
     );
@@ -693,60 +1318,38 @@ class _AccountScreenState extends State<AccountScreen> {
       _selectedCountry != null || _selectedRegion != null || _selectedCity != null;
 
   Widget _buildSelectedLocation() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Selected Location:',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          [
-            if (_selectedCity != null) _selectedCity,
-            if (_selectedRegion != null) _selectedRegion,
-            if (_selectedCountry != null) _selectedCountry,
-          ].where((e) => e != null).join(', '),
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton(UserModel user) {
-    return ElevatedButton(
-      onPressed: _isLoading ? null : () => _handleSave(user),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).primaryColor.withOpacity(0.3),
         ),
       ),
-      child: _isLoading
-          ? const SizedBox(
-        height: 20,
-        width: 20,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      )
-          : const Text(
-        'Save Changes',
-        style: TextStyle(fontSize: 16),
-      ),
-    );
-  }
-
-  Widget _buildSignOutButton() {
-    return OutlinedButton(
-      onPressed: _handleSignOut,
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: const Text(
-        'Sign Out',
-        style: TextStyle(fontSize: 16),
+      child: Row(
+        children: [
+          Icon(
+            Icons.location_on,
+            size: 16,
+            color: Theme.of(context).primaryColor,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              [
+                if (_selectedCity != null) _selectedCity,
+                if (_selectedRegion != null) _selectedRegion,
+                if (_selectedCountry != null) _selectedCountry,
+              ].where((e) => e != null).join(', '),
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

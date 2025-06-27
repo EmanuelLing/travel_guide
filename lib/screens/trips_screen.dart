@@ -6,6 +6,7 @@ import '../services/itinerary_service.dart';
 import '../widgets/itinerary_card.dart';
 import 'edit_itinerary_screen.dart';
 import 'itinerary_details_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class TripsScreen extends StatefulWidget {
   const TripsScreen({super.key});
@@ -85,17 +86,27 @@ class _TripsScreenState extends State<TripsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_currentUser == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
-          child: Text('Please sign in to view your trips'),
+          child: Text(l10n.signInTrip),
         ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Trips'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).primaryColor,
+        title: Text(
+          l10n.myTrip,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -111,15 +122,15 @@ class _TripsScreenState extends State<TripsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                _buildFilterChip('All', 'all'),
+                _buildFilterChip(l10n.statusAll, 'all'),
                 const SizedBox(width: 8),
-                _buildFilterChip('Planned', 'planned'),
+                _buildFilterChip(l10n.statusPlanned, 'planned'),
                 const SizedBox(width: 8),
-                _buildFilterChip('In Progress', 'in_progress'),
+                _buildFilterChip(l10n.statusInProgress, 'in_progress'),
                 const SizedBox(width: 8),
-                _buildFilterChip('Completed', 'completed'),
+                _buildFilterChip(l10n.statusCompleted, 'completed'),
                 const SizedBox(width: 8),
-                _buildFilterChip('Cancelled', 'cancelled'),
+                _buildFilterChip(l10n.statusCancelled, 'cancelled'),
               ],
             ),
           ),
@@ -154,7 +165,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No trips yet',
+                          l10n.noTrip,
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
@@ -163,7 +174,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Start planning your next adventure!',
+                          l10n.tripPlanning,
                           style: TextStyle(
                             color: Colors.grey[500],
                           ),
@@ -172,7 +183,7 @@ class _TripsScreenState extends State<TripsScreen> {
                         ElevatedButton.icon(
                           onPressed: _createNewItinerary,
                           icon: const Icon(Icons.add),
-                          label: const Text('Create New Trip'),
+                          label: Text(l10n.createNewTrip),
                         ),
                       ],
                     ),
@@ -187,7 +198,7 @@ class _TripsScreenState extends State<TripsScreen> {
                 if (filteredItineraries.isEmpty) {
                   return Center(
                     child: Text(
-                      'No ${_selectedFilter.replaceAll('_', ' ')} trips found',
+                      '${l10n.noTripFound1} ${_selectedFilter.replaceAll('_', ' ')} ${l10n.noTripFound2}',
                       style: TextStyle(
                         color: Colors.grey[600],
                       ),

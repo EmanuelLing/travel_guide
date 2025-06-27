@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'locale_provider.dart';
 import 'screens/register_screen.dart';
 import 'screens/login_screen.dart';
 import 'widgets/main_navigation.dart';
@@ -12,7 +17,12 @@ void main() async {
     await Firebase.initializeApp(
       // Add your FirebaseOptions if not automatically configured
     );
-    runApp(MyApp());
+    runApp(
+        ChangeNotifierProvider(
+          create: (context) => LocaleProvider(), // Provide LocaleProvider here
+          child: const MyApp(),
+        ),
+    );
   } catch (e) {
     print("Failed to initialize Firebase: $e");
     // Handle the error, e.g., display an error screen
@@ -32,6 +42,26 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         fontFamily: 'Roboto',
       ),
+      localizationsDelegates: const [
+        AppLocalizations.delegate, // Generated delegate
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales, // Use generated list
+      // Listen to the LocaleProvider for the current locale
+      locale: Provider.of<LocaleProvider>(context).locale,
+      // Optional: Handles fallback if device locale isn't directly supported
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale == null) return supportedLocales.first; // Default if no device locale
+
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale.languageCode) {
+            return supportedLocale;
+          }
+        }
+        return supportedLocales.first; // Fallback to first supported locale (e.g., English)
+      },
       home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginScreen(),

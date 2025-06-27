@@ -16,13 +16,13 @@ class Region {
 }
 
 class LocationApiService {
-  static const String countriesUrl = 'https://restcountries.com/v3.1/all';
+  static const String countriesUrl = 'https://restcountries.com/v3.1/all?fields=name,cca2';
   static const String geoDbBaseUrl = 'http://geodb-free-service.wirefreethought.com';
 
   // Fetch list of countries
   Future<List<Country>> getCountries() async {
     final response = await http.get(
-        Uri.parse('https://restcountries.com/v3.1/all'));
+        Uri.parse(countriesUrl));
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
       List<Country> countries = data.map((country) {

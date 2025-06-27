@@ -9,6 +9,7 @@ import '../widgets/recommended_places.dart';
 import '../services/firestore_service.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -56,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (_isLoading) {
       return const Scaffold(
         body: Center(
@@ -80,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome${_currentUser?.displayName != null ? ', ${_currentUser!.displayName}' : ''}!',
+                        '${l10n.welcome}${_currentUser?.displayName != null ? ', ${_currentUser!.displayName}' : ''}!',
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -92,10 +95,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // Search Results Section - FIX: Specify a fixed height for ListView
                       _searchResults.isEmpty
-                          ? const Center(
+                          ? Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 20.0),
-                          child: Text('No search results'),
+                          child: Text(l10n.noSearchResult),
                         ),
                       )
                           : Container(
@@ -125,8 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'See Other Itineraries',
+                      Text(
+                        l10n.seeOtherItineraries,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -153,8 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             final itineraries = snapshot.data ?? [];
 
                             if (itineraries.isEmpty) {
-                              return const Center(
-                                child: Text('No itineraries found'),
+                              return Center(
+                                child: Text(l10n.noItinerariesFound),
                               );
                             }
 
@@ -195,8 +198,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       const SizedBox(height: 16),
                       // Recommended Places based on location
-                      const Text(
-                        'Recommended Places',
+                      Text(
+                        l10n.recommendedPlaces,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -205,11 +208,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_currentUser != null)
                         RecommendedPlaces(user: _currentUser!)
                       else
-                        const Center(
+                        Center(
                           child: Padding(
                             padding: EdgeInsets.all(16.0),
                             child: Text(
-                              'Sign in to see personalized recommendations',
+                              l10n.signInToSeeRec,
                               style: TextStyle(
                                 color: Colors.grey,
                                 fontSize: 16,

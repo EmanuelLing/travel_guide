@@ -134,20 +134,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 // Forgot Password
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Password reset functionality coming soon'),
-                        ),
-                      );
-                    },
-                    child: const Text('Forgot Password?'),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                // Align(
+                //   alignment: Alignment.centerRight,
+                //   child: TextButton(
+                //     onPressed: () {
+                //       ScaffoldMessenger.of(context).showSnackBar(
+                //         const SnackBar(
+                //           content: Text('Password reset functionality coming soon'),
+                //         ),
+                //       );
+                //     },
+                //     child: const Text('Forgot Password?'),
+                //   ),
+                // ),
+                // const SizedBox(height: 24),
                 // Login Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,

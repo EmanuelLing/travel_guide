@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
-import '../services/saved_place_details_screen.dart';
+import 'saved_place_details_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SavedPlacesScreen extends StatefulWidget {
   final bool selectMode; // Enable multi-selection mode when true
@@ -72,13 +73,15 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Theme.of(context).primaryColor,
-        title: const Text(
-          'Saved Places',
+        title: Text(
+          l10n.savedPlaces,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -132,6 +135,8 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
   }
 
   Widget _buildEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -143,7 +148,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'No saved places yet',
+            l10n.noSavedPlaces,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -152,7 +157,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Your favorite locations will appear here',
+            l10n.favoriteLocations,
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -162,7 +167,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
           ElevatedButton.icon(
             onPressed: _refreshPlaces,
             icon: const Icon(Icons.refresh),
-            label: const Text('Refresh'),
+            label: Text(l10n.refresh),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -176,7 +181,9 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
   }
 
   Widget _buildPlaceCard(Map<String, dynamic> place, int index) {
-    final placeType = place['type'] ?? 'location';
+    final l10n = AppLocalizations.of(context)!;
+
+    final placeType = place['type'] ?? l10n.location;
     final IconData categoryIcon = _getCategoryIcon(placeType);
     final Color categoryColor = _getCategoryColor(placeType);
 
@@ -251,7 +258,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            place['name'] ?? 'Unnamed Place',
+                            place['name'] ?? l10n.unnamedPlace,
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -270,7 +277,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  place['address'] ?? 'No address available',
+                                  place['address'] ?? l10n.noAddressAvailable,
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey[700],
@@ -356,13 +363,15 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
   }
 
   Future<void> _showDeleteConfirmation(Map<String, dynamic> place) async {
+    final l10n = AppLocalizations.of(context)!;
+
     return showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Remove Place'),
+          title: Text(l10n.removePlace),
           content: Text(
-              'Are you sure you want to remove "${place['name']}" from your saved places?'
+              '${l10n.removeConfirm1} ${place['name']}?'
           ),
           actions: [
             TextButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SavedPlaceDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> place;
@@ -118,10 +119,12 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
   }
 
   void _copyToClipboard(BuildContext context, String text, String label) {
+    final l10n = AppLocalizations.of(context)!;
+
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label copied to clipboard'),
+        content: Text('$label ${l10n.copy}'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -129,6 +132,8 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     final String name = place['name'] ?? 'Unnamed Place';
     final String imageUrl = place['image'] ?? '';
     final String address = place['address'] ?? '';
@@ -267,8 +272,8 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
 
                       // Location Information
                       if (address.isNotEmpty || city.isNotEmpty || country.isNotEmpty) ...[
-                        const Text(
-                          'Location',
+                        Text(
+                          l10n.location,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -279,7 +284,7 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
                           _buildInfoCard(
                             context,
                             icon: Icons.location_on,
-                            title: 'Address',
+                            title: l10n.address,
                             value: address,
                             onTap: () => _copyToClipboard(context, address, 'Address'),
                           ),
@@ -287,14 +292,14 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
                           _buildInfoCard(
                             context,
                             icon: Icons.location_city,
-                            title: 'City',
+                            title: l10n.city,
                             value: city,
                           ),
                         if (country.isNotEmpty)
                           _buildInfoCard(
                             context,
                             icon: Icons.public,
-                            title: 'Country',
+                            title: l10n.country,
                             value: country,
                           ),
                         const SizedBox(height: 16),
@@ -302,8 +307,8 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
 
                       // Contact Information
                       if (phone.isNotEmpty || website.isNotEmpty) ...[
-                        const Text(
-                          'Contact',
+                        Text(
+                          l10n.contact,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -314,7 +319,7 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
                           _buildInfoCard(
                             context,
                             icon: Icons.phone,
-                            title: 'Phone',
+                            title: l10n.phone,
                             value: phone,
                             onTap: () => _makePhoneCall(phone),
                           ),
@@ -322,7 +327,7 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
                           _buildInfoCard(
                             context,
                             icon: Icons.language,
-                            title: 'Website',
+                            title: l10n.website,
                             value: website,
                             onTap: () => _launchUrl(website.startsWith('http') ? website : 'https://$website'),
                           ),
@@ -331,8 +336,8 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
 
                       // Opening Hours
                       if (openingHours.isNotEmpty) ...[
-                        const Text(
-                          'Hours',
+                        Text(
+                          l10n.hours,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -342,7 +347,7 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
                         _buildInfoCard(
                           context,
                           icon: Icons.access_time,
-                          title: 'Opening Hours',
+                          title: l10n.openingHours,
                           value: openingHours,
                         ),
                         const SizedBox(height: 16),
@@ -350,8 +355,8 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
 
                       // Notes
                       if (notes.isNotEmpty) ...[
-                        const Text(
-                          'Notes',
+                        Text(
+                          l10n.notes,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -394,7 +399,7 @@ class SavedPlaceDetailsScreen extends StatelessWidget {
           }
         },
         icon: const Icon(Icons.directions),
-        label: const Text('Directions'),
+        label: Text(l10n.directions),
       ),
     );
   }

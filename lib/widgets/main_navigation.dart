@@ -4,6 +4,7 @@ import '../screens/home_screen.dart';
 import '../screens/trips_screen.dart';
 import '../screens/account_screen.dart';
 import '../screens/chat_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -45,6 +46,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: IndexedStack(
         index: _selectedIndex,
@@ -68,31 +71,31 @@ class _MainNavigationState extends State<MainNavigation> {
           selectedIndex: _selectedIndex,
           onDestinationSelected: _onItemTapped,
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
+          destinations:  [
             NavigationDestination(
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home),
-              label: 'Home',
+              label: l10n.home,
             ),
             NavigationDestination(
               icon: Icon(Icons.bookmark_outlined),
               selectedIcon: Icon(Icons.bookmark),
-              label: 'Places',
+              label: l10n.places,
             ),
             NavigationDestination(
               icon: Icon(Icons.map_outlined),
               selectedIcon: Icon(Icons.map),
-              label: 'trip',
+              label: l10n.trip,
             ),
             NavigationDestination(
               icon: Icon(Icons.chat_outlined),
               selectedIcon: Icon(Icons.chat),
-              label: 'Chat',
+              label: l10n.chat,
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
-              label: 'Account',
+              label: l10n.account,
             ),
           ],
         ),

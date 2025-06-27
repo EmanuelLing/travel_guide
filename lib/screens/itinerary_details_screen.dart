@@ -5,6 +5,7 @@ import '../models/itinerary_model.dart';
 import '../models/user_model.dart';
 import '../services/itinerary_service.dart';
 import 'edit_itinerary_screen.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ItineraryDetailsScreen extends StatefulWidget {
   final ItineraryModel itinerary;
@@ -78,22 +79,24 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Future<void> _handleDelete() async {
+    final l10n = AppLocalizations.of(context)!;
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Itinerary'),
+        title: Text(l10n.deleteItinerary),
         content: const Text('Are you sure you want to delete this itinerary?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -121,6 +124,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Future<void> _handleCopy() async {
+    final l10n = AppLocalizations.of(context)!;
+
     setState(() => _isLoading = true);
     try {
       final newItineraryData = widget.itinerary.toFirestore();
@@ -133,13 +138,13 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Itinerary copied successfully')),
+          SnackBar(content: Text(l10n.successCopyItinerary)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to copy itinerary: $e')),
+          SnackBar(content: Text('${l10n.failCopyItinerary}: $e')),
         );
         print('Failed to copy itinerary: $e');
       }
@@ -294,6 +299,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Widget _buildDescriptionSection() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 2,
       shadowColor: Colors.black26,
@@ -312,8 +319,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                   children: [
                     Icon(Icons.description, color: Theme.of(context).primaryColor),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Description',
+                    Text(
+                      l10n.description,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -328,7 +335,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                         _showFullDescription = !_showFullDescription;
                       });
                     },
-                    child: Text(_showFullDescription ? 'Show Less' : 'Show More'),
+                    child: Text(_showFullDescription ? l10n.showLess : l10n.showMore),
                   ),
               ],
             ),
@@ -349,6 +356,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Widget _buildTagsSection() {
+    final l10n = AppLocalizations.of(context)!;
     if (widget.itinerary.tags.isEmpty) return const SizedBox.shrink();
 
     return Card(
@@ -366,8 +374,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
               children: [
                 Icon(Icons.tag, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 8),
-                const Text(
-                  'Tags',
+                Text(
+                  l10n.tags,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -407,6 +415,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Widget _buildAuthorSection() {
+    final l10n = AppLocalizations.of(context)!;
+
     return Card(
       elevation: 2,
       shadowColor: Colors.black26,
@@ -443,7 +453,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                     ),
                   ),
                   Text(
-                    'Created on ${_formatDate(widget.itinerary.createdAt)}',
+                    '${l10n.createdOn} ${_formatDate(widget.itinerary.createdAt)}',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[600],
@@ -485,13 +495,15 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
   }
 
   Widget buildPlacesListGroupedByDay(List<Map<String, dynamic>> places) {
+    final l10n = AppLocalizations.of(context)!;
+
     if (places.isEmpty) {
-      return const Card(
+      return Card(
         elevation: 2,
         child: Padding(
           padding: EdgeInsets.all(16.0),
           child: Center(
-            child: Text('No places added to this itinerary.'),
+            child: Text(l10n.noPlaceAdded),
           ),
         ),
       );
@@ -520,8 +532,8 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                 children: [
                   Icon(Icons.map, color: Theme.of(context).primaryColor),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Places to Visit',
+                  Text(
+                    l10n.placesToVisit,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -539,7 +551,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                 ),
                 child: ExpansionTile(
                   title: Text(
-                    'Day $day',
+                    '${l10n.day} $day',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
@@ -567,7 +579,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                     return ListTile(
                       contentPadding: const EdgeInsets.only(left: 72, right: 16),
                       title: Text(
-                        place['name'] ?? 'Unnamed Place',
+                        place['name'] ?? l10n.unnamedPlace,
                         style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                       subtitle: Text(place['location']?['city'] ?? ''),
@@ -585,6 +597,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isOwner = widget.itinerary.author.uid == widget.currentUser.uid;
 
     return Scaffold(
@@ -652,7 +665,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                       Expanded(
                         child: _buildInfoCard(
                           Icons.location_on,
-                          'LOCATION',
+                          l10n.location,
                           widget.itinerary.location,
                         ),
                       ),
@@ -664,7 +677,7 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                       Expanded(
                         child: _buildInfoCard(
                           Icons.calendar_today,
-                          'DATES',
+                          l10n.dates,
                           '${_formatDate(widget.itinerary.startDate)} - ${_formatDate(widget.itinerary.endDate)}',
                         ),
                       ),
