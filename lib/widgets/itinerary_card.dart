@@ -38,19 +38,19 @@ class ItineraryCard extends StatelessWidget {
         backgroundColor = Colors.green[100]!;
         textColor = Colors.green[800]!;
         iconData = Icons.check_circle;
-        statusText = 'DONE';
+        statusText = 'COMPLETED';
         break;
       case 'in_progress':
         backgroundColor = Colors.blue[100]!;
         textColor = Colors.blue[800]!;
         iconData = Icons.timelapse_rounded;
-        statusText = 'ACTIVE';
+        statusText = 'IN PROGRESS';
         break;
       case 'cancelled':
         backgroundColor = Colors.red[100]!;
         textColor = Colors.red[800]!;
         iconData = Icons.cancel;
-        statusText = 'CANCEL';
+        statusText = 'CANCELLED';
         break;
       default:
         backgroundColor = Colors.orange[100]!;
@@ -83,6 +83,23 @@ class ItineraryCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShareStatusIcon() {
+    final isPublic = itinerary.shareStatus == 'public';
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: isPublic ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Icon(
+        isPublic ? Icons.public : Icons.lock,
+        size: 10,
+        color: isPublic ? Colors.green[700] : Colors.grey[600],
       ),
     );
   }
@@ -150,6 +167,8 @@ class ItineraryCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 4),
+                    _buildShareStatusIcon(),
                     const SizedBox(width: 4),
                     _buildStatusChip(),
                   ],

@@ -28,11 +28,18 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _status = 'planned';
+  String _shareStatus = 'private';
   bool _isLoading = false;
   final _itineraryService = ItineraryService();
 
   List<Map<String, dynamic>> _places = [];
   int _selectedDay = 1;
+
+  // Define word limits
+  final int _titleWordLimit = 10;
+  final int _descriptionWordLimit = 50;
+  final int _locationWordLimit = 10;
+  final int _tagsWordLimit = 10;
 
   @override
   void initState() {
@@ -56,6 +63,9 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
 
     // Fill in status
     _status = itinerary.status;
+
+    // Fill in share status - handle existing data that might have 'shareStatus' as default
+    _shareStatus = (itinerary.shareStatus == 'shareStatus') ? 'private' : itinerary.shareStatus;
 
     // Fill in tags
     if (itinerary.tags.isNotEmpty) {
@@ -81,6 +91,53 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
     _locationController.dispose();
     _tagsController.dispose();
     super.dispose();
+  }
+
+  int _countWords(String text) {
+    if (text.isEmpty) return 0;
+    return text.trim().split(RegExp(r'\s+')).length; // Split by whitespace
+  }
+
+  String? _validateTitle(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a title';
+    }
+    if (_countWords(value) > _titleWordLimit) {
+      return 'Title cannot exceed $_titleWordLimit words';
+    }
+    print("number of words: ${_countWords(value)}");
+    print("not exceed words");
+    return null;
+  }
+
+  String? _validateDescription(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a description';
+    }
+    if (_countWords(value) > _descriptionWordLimit) {
+      return 'Description cannot exceed $_descriptionWordLimit words';
+    }
+    return null;
+  }
+
+  String? _validateLocation(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a location';
+    }
+    if (_countWords(value) > _locationWordLimit) {
+      return 'Location cannot exceed $_locationWordLimit words';
+    }
+    return null;
+  }
+
+  String? _validateTags(String? value) {
+    if (value == null || value.isEmpty) {
+      return null; // Tags are optional
+    }
+    if (_countWords(value) > _tagsWordLimit) {
+      return 'Tags cannot exceed $_tagsWordLimit words';
+    }
+    return null;
   }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
@@ -171,6 +228,7 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
           endDate: _endDate,
           tags: _processTags(_tagsController.text),
           status: _status,
+          shareStatus: _shareStatus,
           additionalData: additionalData,
         );
       }
@@ -189,6 +247,96 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Widget _buildShareStatusSelector() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  _shareStatus == 'public' ? Icons.public : Icons.lock,
+                  color: _shareStatus == 'public' ? Colors.green : Colors.grey[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Share Settings',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _shareStatus == 'public'
+                  ? 'This itinerary is visible to other users'
+                  : 'This itinerary is only visible to you',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Row(
+                      children: [
+                        Icon(Icons.lock, size: 18, color: Colors.grey[600]),
+                        const SizedBox(width: 8),
+                        const Text('Private'),
+                      ],
+                    ),
+                    subtitle: const Text('Only you can see this'),
+                    value: 'private',
+                    groupValue: _shareStatus,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _shareStatus = value;
+                        });
+                      }
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+                Expanded(
+                  child: RadioListTile<String>(
+                    title: Row(
+                      children: [
+                        Icon(Icons.public, size: 18, color: Colors.green),
+                        const SizedBox(width: 8),
+                        const Text('Public'),
+                      ],
+                    ),
+                    subtitle: const Text('Others can discover this'),
+                    value: 'public',
+                    groupValue: _shareStatus,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _shareStatus = value;
+                        });
+                      }
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -237,12 +385,7 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
                   labelText: 'Title',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
+                validator: _validateTitle,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -252,12 +395,7 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a description';
-                  }
-                  return null;
-                },
+                validator: _validateDescription,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -266,12 +404,7 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
                   labelText: 'Location',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a location';
-                  }
-                  return null;
-                },
+                validator: _validateLocation,
               ),
               const SizedBox(height: 16),
               Row(
@@ -308,7 +441,10 @@ class _EditItineraryScreenState extends State<EditItineraryScreen> {
                   border: OutlineInputBorder(),
                   hintText: 'beach, summer, family',
                 ),
+                validator: _validateTags,
               ),
+              const SizedBox(height: 16),
+              _buildShareStatusSelector(),
               const SizedBox(height: 16),
               Row(
                 children: [

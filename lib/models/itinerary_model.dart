@@ -16,6 +16,7 @@ class ItineraryModel {
   final int likeCount;
   final List<DocumentReference> likes;
   final List<Map<String, dynamic>> places;
+  final String shareStatus;
 
   ItineraryModel({
     required this.id,
@@ -24,6 +25,7 @@ class ItineraryModel {
     required this.location,
     required this.startDate,
     required this.endDate,
+    required this.shareStatus,
     List<String>? tags,
     String? status,
     required this.author,
@@ -58,6 +60,7 @@ class ItineraryModel {
       likeCount: data['likeCount'] ?? 0,
       likes: List<DocumentReference>.from(data['likes'] ?? []),
       places: data['places'] != null ? List<Map<String, dynamic>>.from(data['places']) : [],
+      shareStatus: data['shareStatus'],
     );
   }
 
@@ -77,6 +80,7 @@ class ItineraryModel {
       'likes': likes,
       'places': places,
       'searchTerms': _generateSearchTerms(),
+      'shareStatus': shareStatus,
     };
   }
 
@@ -127,6 +131,7 @@ class ItineraryModel {
       updatedAt: updatedAt ?? this.updatedAt,
       likeCount: likeCount ?? this.likeCount,
       likes: likes ?? this.likes,
+      shareStatus: 'private',
     );
   }
 

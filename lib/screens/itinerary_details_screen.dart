@@ -595,6 +595,68 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
     );
   }
 
+  // Build share status information card
+  Widget _buildShareStatusCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final isPublic = widget.itinerary.shareStatus == 'public';
+    final shareStatusText = isPublic ? 'Public' : 'Private';
+    final shareStatusDescription = isPublic
+        ? l10n.public
+        : l10n.private;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isPublic ? Colors.green.shade50 : Colors.grey.shade50,
+        border: Border.all(
+          color: isPublic ? Colors.green.shade200 : Colors.grey.shade300,
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isPublic ? Colors.green.shade100 : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              isPublic ? Icons.public : Icons.lock,
+              size: 16,
+              color: isPublic ? Colors.green.shade700 : Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  shareStatusText,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: isPublic ? Colors.green.shade800 : Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  shareStatusDescription,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isPublic ? Colors.green.shade600 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -683,6 +745,19 @@ class _ItineraryDetailsScreenState extends State<ItineraryDetailsScreen> {
                       ),
                       const SizedBox(width: 12),
                       _buildStatusChip(),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Add share status row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildShareStatusCard(),
+                      ),
+                      // if (isOwner) ...[
+                      //   const SizedBox(width: 12),
+                      //   _buildQuickShareToggle(),
+                      // ],
                     ],
                   ),
                   const SizedBox(height: 16),

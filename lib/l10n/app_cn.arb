@@ -141,5 +141,7 @@
   "selectDay": "选择天",
   "addPlace": "从已保存地点添加地点",
   "noPlacesYet": "尚未添加任何地点",
-  "day": "天"
+  "day": "天",
+  "public": "对所有人可见",
+  "private": "仅对你可见"
 }

@@ -522,7 +522,7 @@ class _AccountScreenState extends State<AccountScreen> {
           elevation: 0,
           backgroundColor: Theme.of(context).primaryColor,
           title: Text(
-          l10n.savedPlaces,
+          l10n.account,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
@@ -1089,7 +1089,12 @@ class _AccountScreenState extends State<AccountScreen> {
             children: [
               Icon(Icons.photo_camera, color: Theme.of(context).primaryColor),
               const SizedBox(width: 8),
-              Text(l10n.updateProfilePicture),
+              Text(
+                l10n.updateProfilePicture,
+                style: TextStyle(
+                  fontSize: 16.0,
+                ),
+              ),
             ],
           ),
           content: Column(

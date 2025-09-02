@@ -24,6 +24,7 @@ class ItineraryService {
       'endDate': endDate,
       'tags': tags,
       'status': 'planned',
+      'shareStatus': 'private',
       'places': additionalData?['places'] ?? [],
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -247,6 +248,7 @@ class ItineraryService {
     DateTime? endDate,
     List<String>? tags,
     String? status,
+    String? shareStatus,
     Map<String, dynamic>? additionalData,
   }) async {
     final data = <String, dynamic>{};
@@ -257,6 +259,7 @@ class ItineraryService {
     if (endDate != null) data['endDate'] = endDate;
     if (tags != null) data['tags'] = tags;
     if (status != null) data['status'] = status;
+    if (shareStatus != null) data['shareStatus'] = shareStatus;
     if (additionalData != null && additionalData.containsKey('places')) {
       data['places'] = additionalData['places'];
     }
@@ -271,6 +274,7 @@ class ItineraryService {
     return _firestore
         .collection('itineraries')
         .where('author', isNotEqualTo: userRef)
+        .where('shareStatus', isEqualTo: 'public')
         .orderBy('author')
         .orderBy('createdAt', descending: true)
         .snapshots()
@@ -294,6 +298,7 @@ class ItineraryService {
             'tags': data['tags'] ?? [],
             'places': data['places'] ?? [],
             'status': data['status'] ?? 'planned',
+            'shareStatus': data['shareStatus'],
             'createdAt': data['createdAt'],
             'updatedAt': data['updatedAt'],
             'author': author,

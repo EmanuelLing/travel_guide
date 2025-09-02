@@ -11,7 +11,7 @@ class GeminiAIService {
   GeminiAIService() {
     // Initialize the GenerativeModel
     _model = GenerativeModel(
-      model: 'gemma-3-1b-it', // Using gemini-pro, or 'gemini-1.5-flash-latest' as discussed
+      model: 'gemini-2.0-flash-lite', // Using gemini-pro, or 'gemini-1.5-flash-latest' as discussed
       apiKey: _GEMINI_API_KEY,
     );
 

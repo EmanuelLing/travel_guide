@@ -141,5 +141,7 @@
   "selectDay": "Pilih Hari",
   "addPlace": "Tambah Tempat dari Tempat Tersimpan",
   "noPlacesYet": "Tiada tempat ditambah lagi",
-  "day": "Hari"
+  "day": "Hari",
+  "public": "Boleh dilihat oleh semua orang",
+  "private": "Hanya boleh dilihat oleh anda"
 }

@@ -141,5 +141,7 @@
   "selectDay": "Select Day",
   "addPlace": "Add Place from Saved Places",
   "noPlacesYet": "No places added yet",
-  "day": "Day"
+  "day": "Day",
+  "public": "Visible to everyone",
+  "private": "Only visible to you"
 }
